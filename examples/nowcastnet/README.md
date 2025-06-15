@@ -4,6 +4,10 @@
 
 此实现基于 **PaddleScience (飞桨科学计算工具套件)** 构建。
 
+代码开源仓库为[PaddleScience/examples/nowcastnet at develop · Longxmas/PaddleScience](https://github.com/Longxmas/PaddleScience/tree/develop/examples/nowcastnet)。
+
+代码位于压缩包的examples/nowcastnet目录下。
+
 ## 项目结构
 
 ```
@@ -214,6 +218,31 @@ python nowcastnet.py mode=eval
        -   `psd_evaluation.png`: 所有样本平均的PSD曲线对比图。
    -   通过分析这些图表，您可以全面、定量地评估您的 NowcastNet 模型在不同强度、不同尺度和不同预报时效下的性能表现。
 
+## 可视化结果
+
+![evolution_batch_0](imgs\evolution_batch_0.png)
+
+![evolution_batch_1](imgs\evolution_batch_1.png)
+
+![evolution_batch_1](imgs\evolution_batch_2.png)
+
+![evolution_batch_3](imgs\evolution_batch_3.png)
+
+![evolution_batch_4](imgs\evolution_batch_4.png)
+
+模型预测结果可视化动图：
+
+<video src="imgs\nowcastnet_pred.mp4"></video>
+
+观测结果可视化动图：
+
+<video src="imgs\ground_truth.mp4"></video>
+
+## 定量评估结果
+
+![csi_evaluation](imgs\csi_evaluation.png)
+
+![psd_evaluation](imgs\psd_evaluation.png)
 
 ## 交互式演示
 
