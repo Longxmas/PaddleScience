@@ -230,13 +230,10 @@ python nowcastnet.py mode=eval
 
 ![evolution_batch_4](imgs/evolution_batch_4.png)
 
-模型预测结果可视化动图：
+模型预测结果可视化动图：imgs/nowcastnet_pred.mp4
 
-<video src="imgs/nowcastnet_pred.mp4"></video>
+观测结果可视化动图：imgs/ground_truth.mp4
 
-观测结果可视化动图：
-
-<video src="imgs/ground_truth.mp4"></video>
 
 ## 定量评估结果
 
