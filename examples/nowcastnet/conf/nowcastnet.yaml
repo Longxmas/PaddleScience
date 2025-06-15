@@ -21,31 +21,31 @@ hydra:
     subdir: ./
 
 # general settings
-mode: eval # running mode: train/eval
+mode: train # Default mode to train for this config
 seed: 42
-log_freq: 20
-output_dir: ${hydra:run.dir}
-NORMAL_DATASET_PATH: datasets/mrms/figure
-LARGE_DATASET_PATH: datasets/mrms/large_figure
+log_freq: 5 # This is cfg.log_freq, TRAIN.log_freq is for batch logging.
+output_dir: outputs_notebook
+NORMAL_DATASET_PATH: datasets/mrms/figure # Used by eval mode
+LARGE_DATASET_PATH: datasets/mrms/large_figure # Used by eval mode
 
 # set working condition
 CASE_TYPE: normal # normal/large
-NUM_SAVE_SAMPLES: 10
-CPU_WORKER: 1
+NUM_SAVE_SAMPLES: 10 # For eval/infer visualization
+CPU_WORKER: 1 # For eval/infer dataloader
 
 # model settings
 MODEL:
   normal:
-    input_keys: ["input"]
+    input_keys: ["radar_frames"] # Changed from "input" to match RadarDataset
     output_keys: ["output"]
     input_length: 9
-    total_length: 29
+    total_length: 29 # input_length + pred_length (9 + 20)
     image_width: 512
     image_height: 512
-    image_ch: 2
+    image_ch: 2 # For input_frames_full (intensity, motion_prior)
     ngf: 32
   large:
-    input_keys: ["input"]
+    input_keys: ["radar_frames"] # Changed from "input" to match RadarDataset
     output_keys: ["output"]
     input_length: 9
     total_length: 29
@@ -53,13 +53,59 @@ MODEL:
     image_height: 1024
     image_ch: 2
     ngf: 32
+  # New global MODEL parameters
+  data_max_value: 128.0 # Max value for radar data, used in L_wdis and normalization
+  clip_max: 24.0        # Max clip value for w(x_t) in L_wdis
+
+# training settings
+TRAIN:
+  epochs: 1000
+  iters_per_epoch: -1 # Process all batches in dataloader
+  batch_size: 2      # Paper uses 16 for EvoNet, 16 for GenNet (implies overall batch size)
+  num_workers: 4      # For training dataloader
+  
+  # Optimizers and Learning Rates
+  # learning_rate from train_default might be used if not overridden or if specific LR not found
+  learning_rate_evo: 1.0e-3
+  learning_rate_gen: 3.0e-5
+  learning_rate_disc: 3.0e-5
+  
+  # Loss Hyperparameters (NowcastNet specific)
+  lambda_motion: 0.01   # Paper: 1e-2
+  beta_adv: 6.0         # Paper: 6
+  gamma_pool: 20.0      # Paper: 20
+  ensemble_k: 4         # Paper: k=4 for J_pool
+  pool_size: 2          # Kernel/stride for Q in J_pool (e.g., 2x2 max pool)
+
+  # Checkpointing and Resuming
+  checkpoint_path: null # Set to path like "outputs_nowcastnet/YYYY-MM-DD/HH-MM-SS/checkpoints/latest" to resume
+  save_freq: 5          # Save epoch checkpoints every N epochs
+
+  # Evaluation during training
+  eval_during_train: True
+  eval_freq: 5          # Evaluate every N epochs
+  
+  # Data Paths
+  TRAIN_DATA_PATH: datasets/mrms/figure
+  VALID_DATA_PATH: datasets/mrms/figure
+
+  # Logging frequency for batches
+  log_freq: 20 # Overrides global log_freq for batch-level training logs if needed, or use global.
+               # The train script uses cfg.TRAIN.log_freq.
 
 # evaluation settings
-EVAL:
-  pretrained_model_path: checkpoints/paddle_mrms_model
+EVAL:  
+  visualize: true
+  num_eval_samples: 5 # How many samples to run evaluation on
+  csi_threshold: 16.0
+  key_info_timestep: [60, 120, 180] # Timesteps in minutes to report/visualize
+
+  pretrained_model_path: /mtc/longlingkun/workspace/PaddleScience/examples/nowcastnet/final_model_for_eval/nowcastnet.pdparams # Example path for evaluation
+  batch_size: 1 # For eval dataloader, typically 1 for sequence models if memory is concern
+  num_workers: 1 # For eval dataloader
 
 INFER:
-  pretrained_model_path: https://paddle-org.bj.bcebos.com/paddlescience/models/nowcastnet/nowcastnet_pretrained.pdparams
+  pretrained_model_path: outputs_nowcastnet/checkpoints/best_model/model.pdparams
   export_path: ./inference/nowcastnet
   pdmodel_path: ${INFER.export_path}.pdmodel
   pdiparams_path: ${INFER.export_path}.pdiparams
@@ -72,5 +118,4 @@ INFER:
   gpu_mem: 4000
   gpu_id: 0
   max_batch_size: 16
-  num_cpu_threads: 4
   batch_size: 1

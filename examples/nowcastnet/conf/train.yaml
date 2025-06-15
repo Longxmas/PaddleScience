@@ -1,0 +1,143 @@
+# @package _global_
+defaults:
+  - ppsci_default
+  - TRAIN: train_default
+  - TRAIN/ema: ema_default
+  - TRAIN/swa: swa_default
+  - EVAL: eval_default
+  - INFER: infer_default
+  - hydra/job/config/override_dirname/exclude_keys: exclude_keys_default
+  - _self_
+# ==============================================================================
+# 1. General Settings
+# ==============================================================================
+# Hydra settings for output directory management
+hydra:
+  run:
+    # dynamic output directory according to running time and override name
+    dir: outputs_nowcastnet/${now:%Y-%m-%d}/${now:%H-%M-%S}/${hydra.job.override_dirname}
+  job:
+    name: ${mode} # name of logfile
+    chdir: false # keep current working directory unchanged
+  sweep:
+    # output directory for multirun
+    dir: ${hydra.run.dir}
+    subdir: ./
+
+# General experiment settings
+mode: train # 'train', 'eval', 'export', 'infer'
+seed: 42
+output_dir: ./outputs_notebook
+
+# CASE_TYPE selects between different dataset sizes and potentially model configs
+CASE_TYPE: "normal" # or "large"
+
+# For 'eval' or 'infer' mode, not used in training directly
+EVAL:
+  batch_size: 1
+  num_workers: 2
+  pretrained_model_path: null # Path to the model for evaluation
+INFER:
+  batch_size: 1
+  pretrained_model_path: null # Path to the model for inference
+  export_path: "inference"
+  
+# ==============================================================================
+# 2. Training Settings
+# ==============================================================================
+TRAIN:
+  # CRITICAL: Selects the training phase.
+  # Use 'evolution' for Phase 1, then 'generation' for Phase 2.
+  module_name: generation
+
+  # --- Epochs ---
+  epochs_evo: 50       # Total epochs for the evolution network training
+  epochs_evo_full: 15   
+  epochs_gan: 30        # Total epochs for the GAN (generator + discriminator) training
+  epochs_gan_full: 10
+
+  # --- Data Paths ---
+  # Replace with your actual dataset paths
+  TRAIN_DATA_PATH: "datasets/mrms/figure"
+  VALID_DATA_PATH: "datasets/mrms/figure"
+  FULL_TRAIN_PATH: "/mtc/longlingkun/workspace/datasets_mind/download-mindspore.osinfra.cn/mindscience/mindearth/dataset/nowcastnet/tiny_datasets/train"
+  FULL_VALID_PATH: "/mtc/longlingkun/workspace/datasets_mind/download-mindspore.osinfra.cn/mindscience/mindearth/dataset/nowcastnet/tiny_datasets/valid"
+
+  # You might want separate paths for normal and large cases
+  # NORMAL_DATASET_PATH: "/path/to/normal/dataset"
+  # LARGE_DATASET_PATH: "/path/to/large/dataset"
+
+  # --- Dataloader ---
+  evol_batch_size: 10
+  gan_batch_size: 5
+  num_workers: 4
+
+  # --- Learning Rates ---
+  # Based on MindSpore version and common practice
+  learning_rate_evo: 1e-3
+  learning_rate_gen: 1.5e-5
+  learning_rate_disc: 1e-6
+
+  # --- Optimizer Hyperparameters (Adam) ---
+  beta1: 0.01
+  beta2: 0.9
+
+  # --- Loss Hyperparameters ---
+  # For EvolutionLoss
+  lambda_motion: 0.01
+  evol_weight_decay: 0.001
+  evol_epsilon: 1e-6
+
+  # For GAN losses
+  beta_adv: 8.0          # Weight for adversarial loss in generator's total loss
+  gamma_pool: 20.0       # Weight for pool regularization loss
+  ensemble_k: 4          # Number of samples in the ensemble for pool loss (k)
+  pool_size: 4           # Kernel size for the max-pooling in PoolRegularizationLoss
+
+  # --- Checkpoint and Logging ---
+  save_freq: 10          # Save a checkpoint every N epochs
+  log_freq: 50           # Log training status every N batches
+  eval_during_train: true
+  eval_freq: 5
+
+  # --- Checkpoint Paths for Resuming/Loading ---
+  # Path to resume Evolution training. Set to a dir like "outputs/.../checkpoints_evo/epoch_20"
+  checkpoint_path: null
+
+  # CRITICAL for Phase 2: Path to the BEST/FINAL model from the evolution training.
+  # Should point to the .pdparams file.
+  evolution_checkpoint_path: "/mtc/longlingkun/workspace/PaddleScience/examples/nowcastnet/outputs_nowcastnet/2025-06-10/18-20-56/checkpoints_evo/epoch_1000/model.pdparams"
+
+  # Path to resume GAN training. Set to a dir like "outputs/.../checkpoints_gan/epoch_10"
+  gan_checkpoint_path: null
+
+# ==============================================================================
+# 3. Model Architecture Settings
+# ==============================================================================
+MODEL:
+  # --- General Model Hyperparameters ---
+  # These are often derived from the data properties
+  data_max_value: 128.0  # Max pixel value for un-normalization and weighting
+  clip_max: 24.0         # Max clip value for loss weighting
+
+  # --- 'normal' Case Configuration ---
+  normal:
+    input_keys: ["radar_frames"]
+    output_keys: ["output"]
+    input_length: 9      # Number of past frames (T_in)
+    total_length: 29     # Total sequence length (T_in + T_pred)
+    image_height: 512
+    image_width: 512
+    image_ch: 2          # Channels in input data (e.g., intensity, motion prior)
+    ngf: 32              # Base number of channels for generator/noise projector
+
+  # --- 'large' Case Configuration (if different) ---
+  large:
+    input_keys: ["radar_frames"]
+    output_keys: ["output"]
+    input_length: 9
+    total_length: 29
+    image_height: 1024   # Example: larger resolution
+    image_width: 1024
+    image_ch: 2
+    ngf: 32

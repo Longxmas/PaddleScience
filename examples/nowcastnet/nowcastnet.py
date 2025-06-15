@@ -1,18 +1,20 @@
 """
 Reference: https://codeocean.com/capsule/3935105/tree/v1
 """
+import os # Added for makedirs
 from os import path as osp
 
 import hydra
 import paddle
+import paddle.nn as nn
+import paddle.nn.functional as F
 from omegaconf import DictConfig
 
 import ppsci
 from ppsci.utils import logger
 
-
 def train(cfg: DictConfig):
-    print("Not supported.")
+    pass
 
 
 def evaluate(cfg: DictConfig):
@@ -68,7 +70,7 @@ def evaluate(cfg: DictConfig):
         if batch_id <= cfg.NUM_SAVE_SAMPLES:
             visualizer = {
                 "v_nowcastnet": ppsci.visualize.VisualizerRadar(
-                    {"input": frames_tensor},
+                    {input_keys[0]: frames_tensor},
                     {
                         "output": lambda out: out["output"],
                     },
@@ -153,7 +155,7 @@ def inference(cfg: DictConfig):
     for batch_id, test_ims in enumerate(test_data_loader):
         if batch_id > cfg.NUM_SAVE_SAMPLES:
             break
-        test_ims = {"input": test_ims[0][input_keys[0]].numpy()}
+        test_ims = {"radar_frames": test_ims[0][input_keys[0]].numpy()}
         output_dict = predictor.predict(test_ims, cfg.INFER.batch_size)
         # mapping data to model_cfg.output_keys
         output_dict = {

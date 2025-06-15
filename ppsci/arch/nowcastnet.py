@@ -138,6 +138,68 @@ class NowcastNet(base.Arch):
         feature = paddle.concat(x=[evo_feature, noise_feature], axis=1)
         gen_result = self.gen_dec(feature, evo_result)
         return gen_result.unsqueeze(axis=-1)
+    
+    def forward_tensor_evo_only(self, x):
+        """
+        A helper method to only run the evolution part of the network.
+        This is Part 1 of the original `forward_tensor` method.
+        """
+        all_frames = x[..., :1] 
+        frames = all_frames.transpose(perm=[0, 1, 4, 2, 3])
+        batch = frames.shape[0]
+        height = frames.shape[3]
+        width = frames.shape[4]
+        
+        input_frames = frames[:, :self.input_length].reshape((batch, self.input_length, height, width))
+        
+        intensity, motion = self.evo_net(input_frames)
+        
+        motion_ = motion.reshape((batch, self.pred_length, 2, height, width))
+        intensity_ = intensity.reshape((batch, self.pred_length, 1, height, width))
+        
+        series = []
+        last_frames = all_frames[:, self.input_length - 1:self.input_length, :, :, 0]
+        grid = self.grid.tile((batch, 1, 1, 1))
+
+        for i in range(self.pred_length):
+            last_frames = warp(
+                last_frames, motion_[:, i], grid, mode="nearest", padding_mode="border"
+            )
+            last_frames = last_frames + intensity_[:, i]
+            series.append(last_frames)
+            
+        evo_result = paddle.concat(x=series, axis=1)
+        
+        return evo_result
+
+    def forward_tensor_gen_only(self, x, evo_result_normalized, noise):
+        """
+        A helper method to only run the generator part, given external inputs.
+        This is Part 2 of the original `forward_tensor` method.
+        """
+        all_frames = x[..., :1]
+        frames = all_frames.transpose(perm=[0, 1, 4, 2, 3])
+        batch = frames.shape[0]
+        height = frames.shape[3]
+        width = frames.shape[4]
+        
+        input_frames = frames[:, :self.input_length].reshape((batch, self.input_length, height, width))
+        evo_feature = self.gen_enc(paddle.concat(x=[input_frames, evo_result_normalized], axis=1))
+        
+        noise_projected = self.proj(noise)
+        ngf_p = noise_projected.shape[1]
+        noise_feature = (
+            noise_projected.reshape((batch, -1, 4, 4, 8, 8))
+            .transpose((0, 1, 4, 5, 2, 3))
+            .reshape((batch, ngf_p // 16, height // 8, width // 8))
+        )
+        feature = paddle.concat([evo_feature, noise_feature], axis=1)
+        
+        # 4. 调用 gen_dec
+        gen_result = self.gen_dec(feature, evo_result_normalized)
+        
+        # 5. 返回最终结果
+        return gen_result.unsqueeze(-1)
 
 
 class Evolution_Network(nn.Layer):
