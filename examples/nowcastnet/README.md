@@ -233,6 +233,7 @@ python nowcastnet.py mode=eval
 模型预测结果可视化动图：imgs/nowcastnet_pred.mp4
 
 观测结果可视化动图：imgs/ground_truth.mp4
+<video src="imgs/nowcastnet_pred.mp4"></video>
 
 
 ## 定量评估结果
