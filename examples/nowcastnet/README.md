@@ -220,29 +220,29 @@ python nowcastnet.py mode=eval
 
 ## 可视化结果
 
-![evolution_batch_0](imgs\evolution_batch_0.png)
+![evolution_batch_0](imgs/evolution_batch_0.png)
 
-![evolution_batch_1](imgs\evolution_batch_1.png)
+![evolution_batch_1](imgs/evolution_batch_1.png)
 
-![evolution_batch_1](imgs\evolution_batch_2.png)
+![evolution_batch_1](imgs/evolution_batch_2.png)
 
-![evolution_batch_3](imgs\evolution_batch_3.png)
+![evolution_batch_3](imgs/evolution_batch_3.png)
 
-![evolution_batch_4](imgs\evolution_batch_4.png)
+![evolution_batch_4](imgs/evolution_batch_4.png)
 
 模型预测结果可视化动图：
 
-<video src="imgs\nowcastnet_pred.mp4"></video>
+<video src="imgs/nowcastnet_pred.mp4"></video>
 
 观测结果可视化动图：
 
-<video src="imgs\ground_truth.mp4"></video>
+<video src="imgs/ground_truth.mp4"></video>
 
 ## 定量评估结果
 
-![csi_evaluation](imgs\csi_evaluation.png)
+![csi_evaluation](imgs/csi_evaluation.png)
 
-![psd_evaluation](imgs\psd_evaluation.png)
+![psd_evaluation](imgs/psd_evaluation.png)
 
 ## 交互式演示
 
