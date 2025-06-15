@@ -1,6 +1,7 @@
 # NowcastNet: 极端降水临近预报 (PaddlePaddle 实现)
 
 本仓库提供了 [NowcastNet](https://www.nature.com/articles/s41586-023-06184-4) 论文的 PaddlePaddle 实现，这是一个用于精准进行降水临近预报的深度学习模型。该模型将基于物理的演化方案与条件学习方法统一到一个神经网络框架中，能够对极端降水事件进行高分辨率、长时效的预报。
+![alt text](imgs/paper.png)
 
 此实现基于 **PaddleScience (飞桨科学计算工具套件)** 构建。
 
